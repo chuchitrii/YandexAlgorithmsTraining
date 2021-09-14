@@ -50,7 +50,6 @@ def func():
                     swap(i2, i3)
                     swap(i1, i3)
 
-    print(result)
     with open('output.txt', 'w') as f:
         f.write('\n'.join([f'{i[0]} {i[1]}' for i in result]))
 

@@ -2,6 +2,8 @@ import time
 import glob
 import importlib
 import sys
+import pathlib
+from math import ceil
 
 functionName = 'func'
 searchDirectory = 'contests'
@@ -27,7 +29,7 @@ def getFilePathForConsole(_pathFromGlob: str) -> str:
     return f'{part1}.{bcolors.OK}{part2}{bcolors.RESET}'
 
 def indexWithIndents(i: int) -> str:
-    return str(i) + ' ' * (4 - len(str(i)))
+    return ' ' * (4 - len(str(i))) + str(i) + '  '
 
 def passedString(_passed: bool):
     if _passed:
@@ -36,7 +38,7 @@ def passedString(_passed: bool):
         return f'{bcolors.FAIL}failed{bcolors.RESET}'
 
 try:
-    with open('test.config', 'r') as config:
+    with open('test.config', encoding="utf8", mode='r') as config:
         for line in config.readlines():
             if line.startswith('functionName'):
                 functionName = line.strip().rsplit(' ', 1)[1]
@@ -85,20 +87,30 @@ for answer in answers:
 
 if len(tests) > 0:
     printCol(f'Running tests for {pyFiles[currentFileIndex]}', bcolors.WARNING)
+    outp = open('output.txt', encoding='utf-8', mode='w+')
+    outp.close()
+    inp = open('input.txt', encoding='utf-8', mode='w+')
+    inp.close()
+    inp = open('testerror.log', encoding='utf-8', mode='w+')
+    inp.close()
     for test in tests:
-        with open(test[0], 'r') as q:
-            with open('input.txt', 'w') as inp: 
+        with open(test[0], encoding="utf8", mode='r') as q:
+            with open('input.txt', encoding="utf8", mode='w') as inp: 
                 inp.write(q.read())
-        start = time.time() * 1000
+        start = ceil(time.time() * 1000)
         func()
-        end = time.time() * 1000
-        with open(test[1], 'r') as a:
-            with open('output.txt', 'r') as outp: 
-                rightAnswer = a.read().strip()
-                yourAnswer = outp.read()
-                passed = rightAnswer == yourAnswer
-                print(f'test {bcolors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{bcolors.RESET} {passedString(passed)} | elapsed time: {bcolors.OK}{end - start}{bcolors.RESET} ms')
-                # if not passed:
-                #     print(f'{bcolors.WARNING}expected output:{bcolors.RESET}{newline}{rightAnswer}{newline}{bcolors.WARNING}output:{bcolors.RESET}{newline}{yourAnswer}{newline}')
+        end = ceil(time.time() * 1000)
+        with open(test[1], encoding="utf8", mode='r') as a:
+            with open('output.txt', encoding="utf8", mode='r') as outp: 
+                rightAnswers = [ans.strip() for ans in a.read().split('---')]
+                yourAnswer = outp.read().rstrip()
+                passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
+                print(f'test {bcolors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{bcolors.RESET} {passedString(passed)} | time elapsed: {bcolors.OK}{end - start}{bcolors.RESET} ms')
+                if not passed:
+                    with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
+                        errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
+                        errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
+    pathlib.Path('input.txt').unlink()
+    pathlib.Path('output.txt').unlink()
 else:
-    printCol(f'Test files weren\'t found in directory {getDirectoryPath(getFilePathForImport(pyFiles[currentFileIndex]))}', bcolors.FAIL)
+    printCol(f'Test files weren\'t found in directory: {getDirectoryPath(getFilePathForImport(pyFiles[currentFileIndex]))}', bcolors.FAIL)
