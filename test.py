@@ -4,6 +4,7 @@ import importlib
 import sys
 import pathlib
 from math import ceil
+import json
 
 functionName = 'func'
 searchDirectory = 'contests'
@@ -39,21 +40,16 @@ def passedString(_passed: bool):
         return f'{colors.FAIL}failed{colors.RESET}'
 
 def initFilesForTests():
-    for filename in ['input.txt', 'output.txt', 'testerror.log']:
-        file = open(filename, encoding='utf-8', mode='w+')
-        file.close()
-
+    [open(filename, encoding='utf-8', mode='w+').close() for filename in ['input.txt', 'output.txt', 'failedtests']]
+        
 try:
-    with open('test.config', encoding="utf8", mode='r') as config:
-        for line in config.readlines():
-            if line.startswith('functionName'):
-                functionName = line.strip().rsplit(' ', 1)[1]
-            if line.startswith('searchDirectory'):
-                searchDirectory = line.strip().rsplit(' ', 1)[1]
-            if line.startswith('answerSeparator'):
-                answerSeparator = line.strip().rsplit(' ', 1)[1]
+    with open('config.json', encoding="utf8", mode='r') as data:
+        config = json.load(data)
+        if config['functionName']: functionName = config['functionName']
+        if config['searchDirectory']: searchDirectory = config['searchDirectory']
+        if config['answerSeparator']: answerSeparator = config['answerSeparator']
 except FileNotFoundError:
-    print('test.config not found in directory')
+    print('config.json not found in directory')
     
 pyFiles = glob.glob(searchDirectory + '/**/*.py', recursive=True)
 if len(pyFiles) == 0:
@@ -114,7 +110,7 @@ for test in tests:
     passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
     print(f'test {colors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{colors.RESET} {passedString(passed)} | time elapsed: {colors.OK}{end - start}{colors.RESET} ms')
     if not passed:
-        with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
+        with open('failedtests', encoding='utf-8', mode='a') as errorlog:
             errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
             errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
 
