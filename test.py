@@ -10,14 +10,14 @@ searchDirectory = 'contests'
 answerSeparator = '---'
 doubleBacklash = '\\'
 newline = '\n'
-class bcolors:
+class colors:
     OK = '\033[92m' #GREEN
     WARNING = '\033[93m' #YELLOW
     FAIL = '\033[91m' #RED
     RESET = '\033[0m' #RESET COLOR
 
 def printCol(string: str, color: str) -> None:
-    print(f'{color}{string}{bcolors.RESET}')
+    print(f'{color}{string}{colors.RESET}')
 
 def getDirectoryPath(_pathToFile: str) -> str:
     return _pathToFile.rsplit('.', 1)[0].replace('.', '/')
@@ -27,16 +27,16 @@ def getFilePathForImport(_pathFromGlob: str) -> str:
 
 def getFilePathForConsole(_pathFromGlob: str) -> str:
     part1, part2 = getFilePathForImport(_pathFromGlob).replace(searchDirectory + '.', '').rsplit('.', 1)
-    return f'{part1}.{bcolors.OK}{part2}{bcolors.RESET}'
+    return f'{part1}.{colors.OK}{part2}{colors.RESET}'
 
 def indexWithIndents(i: int) -> str:
     return ' ' * (4 - len(str(i))) + str(i) + '  '
 
 def passedString(_passed: bool):
     if _passed:
-        return f'{bcolors.OK}passed{bcolors.RESET}'
+        return f'{colors.OK}passed{colors.RESET}'
     else:
-        return f'{bcolors.FAIL}failed{bcolors.RESET}'
+        return f'{colors.FAIL}failed{colors.RESET}'
 
 def initFilesForTests():
     for filename in ['input.txt', 'output.txt', 'testerror.log']:
@@ -57,10 +57,9 @@ except FileNotFoundError:
     
 pyFiles = glob.glob(searchDirectory + '/**/*.py', recursive=True)
 if len(pyFiles) == 0:
-    sys.exit(f'{bcolors.FAIL}No *.py files found in {searchDirectory}{bcolors.RESET}')
-
-[print(f'{bcolors.OK}{indexWithIndents(i)}{bcolors.RESET}{getFilePathForConsole(file)}') for i, file in enumerate(pyFiles)]
-printCol('Enter index of the file you want to test', bcolors.WARNING)
+    sys.exit(f'{colors.FAIL}No *.py files found in {searchDirectory}{colors.RESET}')
+[print(f'{colors.OK}{indexWithIndents(i)}{colors.RESET}{getFilePathForConsole(file)}') for i, file in enumerate(pyFiles)]
+printCol('Enter index of the file you want to test', colors.WARNING)
 
 currentFileIndex = None
 while type(currentFileIndex) is not int:
@@ -72,11 +71,11 @@ while type(currentFileIndex) is not int:
                 pyFiles[_currentFileIndex]
                 currentFileIndex = _currentFileIndex
             except IndexError:
-                printCol('Index not found in list. Enter valid index', bcolors.WARNING)
+                printCol('Index not found in list. Enter valid index', colors.WARNING)
         except ValueError:
-            printCol('Enter int', bcolors.WARNING)
+            printCol('Enter int', colors.WARNING)
     else:
-        printCol('Enter int', bcolors.WARNING)
+        printCol('Enter int', colors.WARNING)
 
 filePathForImport = getFilePathForImport(pyFiles[currentFileIndex])
 directoryPath = getDirectoryPath(filePathForImport)
@@ -84,7 +83,7 @@ directoryPath = getDirectoryPath(filePathForImport)
 try:
     func = getattr(importlib.import_module(filePathForImport), functionName)
 except AttributeError:
-    sys.exit(f'{bcolors.FAIL}{functionName}() not found in {pyFiles[currentFileIndex]}{bcolors.RESET}')
+    sys.exit(f'{colors.FAIL}{functionName}() not found in {pyFiles[currentFileIndex]}{colors.RESET}')
 
 answers = glob.glob(directoryPath + '/*.a')
 tests: list[tuple[str, str]] = []
@@ -96,31 +95,28 @@ for answer in answers:
         continue
     tests.append((question, answer))
 
-if len(tests) > 0:
-    printCol(f'Running tests for {pyFiles[currentFileIndex]}', bcolors.WARNING)
-    initFilesForTests()
-    for test in tests:
-        with open(test[0], encoding="utf8", mode='r') as q:
-            with open('input.txt', encoding="utf8", mode='w') as inp: 
-                inp.write(q.read())
+if len(tests) == 0:
+    sys.exit(f'{colors.FAIL}Test files weren\'t found in directory: {directoryPath}{colors.RESET}')
 
-        start = ceil(time.time() * 1000)
-        func()
-        end = ceil(time.time() * 1000)
+printCol(f'Running tests for {pyFiles[currentFileIndex]}', colors.WARNING)
+initFilesForTests()
+for test in tests:
+    with open(test[0], encoding="utf8", mode='r') as q:
+        with open('input.txt', encoding="utf8", mode='w') as inp: 
+            inp.write(q.read())
+    start = ceil(time.time() * 1000)
+    func()
+    end = ceil(time.time() * 1000)
+    with open(test[1], encoding="utf8", mode='r') as answers:
+        with open('output.txt', encoding="utf8", mode='r') as outp: 
+            rightAnswers = [ans.strip() for ans in answers.read().split(answerSeparator)]
+            yourAnswer = outp.read().rstrip()
+    passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
+    print(f'test {colors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{colors.RESET} {passedString(passed)} | time elapsed: {colors.OK}{end - start}{colors.RESET} ms')
+    if not passed:
+        with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
+            errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
+            errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
 
-        with open(test[1], encoding="utf8", mode='r') as answers:
-            with open('output.txt', encoding="utf8", mode='r') as outp: 
-                rightAnswers = [ans.strip() for ans in answers.read().split(answerSeparator)]
-                yourAnswer = outp.read().rstrip()
-
-        passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
-        print(f'test {bcolors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{bcolors.RESET} {passedString(passed)} | time elapsed: {bcolors.OK}{end - start}{bcolors.RESET} ms')
-        if not passed:
-            with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
-                errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
-                errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
-    
-    pathlib.Path('input.txt').unlink()
-    pathlib.Path('output.txt').unlink()
-else:
-    printCol(f'Test files weren\'t found in directory: {directoryPath}', bcolors.FAIL)
+pathlib.Path('input.txt').unlink()
+pathlib.Path('output.txt').unlink()
