@@ -7,6 +7,7 @@ from math import ceil
 
 functionName = 'func'
 searchDirectory = 'contests'
+answerSeparator = '---'
 doubleBacklash = '\\'
 newline = '\n'
 class bcolors:
@@ -37,6 +38,11 @@ def passedString(_passed: bool):
     else:
         return f'{bcolors.FAIL}failed{bcolors.RESET}'
 
+def initFilesForTests():
+    for filename in ['input.txt', 'output.txt', 'testerror.log']:
+        file = open(filename, encoding='utf-8', mode='w+')
+        file.close()
+
 try:
     with open('test.config', encoding="utf8", mode='r') as config:
         for line in config.readlines():
@@ -44,6 +50,8 @@ try:
                 functionName = line.strip().rsplit(' ', 1)[1]
             if line.startswith('searchDirectory'):
                 searchDirectory = line.strip().rsplit(' ', 1)[1]
+            if line.startswith('answerSeparator'):
+                answerSeparator = line.strip().rsplit(' ', 1)[1]
 except FileNotFoundError:
     print('test.config not found in directory')
     
@@ -70,12 +78,15 @@ while type(currentFileIndex) is not int:
     else:
         printCol('Enter int', bcolors.WARNING)
 
+filePathForImport = getFilePathForImport(pyFiles[currentFileIndex])
+directoryPath = getDirectoryPath(filePathForImport)
+
 try:
-    func = getattr(importlib.import_module(getFilePathForImport(pyFiles[currentFileIndex])), functionName)
+    func = getattr(importlib.import_module(filePathForImport), functionName)
 except AttributeError:
     sys.exit(f'{bcolors.FAIL}{functionName}() not found in {pyFiles[currentFileIndex]}{bcolors.RESET}')
 
-answers = glob.glob(getDirectoryPath(getFilePathForImport(pyFiles[currentFileIndex])) + '/*.a')
+answers = glob.glob(directoryPath + '/*.a')
 tests: list[tuple[str, str]] = []
 for answer in answers:
     _question = glob.glob(answer.rsplit('.', 1)[0])
@@ -87,30 +98,29 @@ for answer in answers:
 
 if len(tests) > 0:
     printCol(f'Running tests for {pyFiles[currentFileIndex]}', bcolors.WARNING)
-    outp = open('output.txt', encoding='utf-8', mode='w+')
-    outp.close()
-    inp = open('input.txt', encoding='utf-8', mode='w+')
-    inp.close()
-    inp = open('testerror.log', encoding='utf-8', mode='w+')
-    inp.close()
+    initFilesForTests()
     for test in tests:
         with open(test[0], encoding="utf8", mode='r') as q:
             with open('input.txt', encoding="utf8", mode='w') as inp: 
                 inp.write(q.read())
+
         start = ceil(time.time() * 1000)
         func()
         end = ceil(time.time() * 1000)
-        with open(test[1], encoding="utf8", mode='r') as a:
+
+        with open(test[1], encoding="utf8", mode='r') as answers:
             with open('output.txt', encoding="utf8", mode='r') as outp: 
-                rightAnswers = [ans.strip() for ans in a.read().split('---')]
+                rightAnswers = [ans.strip() for ans in answers.read().split(answerSeparator)]
                 yourAnswer = outp.read().rstrip()
-                passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
-                print(f'test {bcolors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{bcolors.RESET} {passedString(passed)} | time elapsed: {bcolors.OK}{end - start}{bcolors.RESET} ms')
-                if not passed:
-                    with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
-                        errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
-                        errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
+
+        passed = any(yourAnswer == rightAnswer for rightAnswer in rightAnswers)
+        print(f'test {bcolors.WARNING}{test[0].rsplit(doubleBacklash, 1)[1]}{bcolors.RESET} {passedString(passed)} | time elapsed: {bcolors.OK}{end - start}{bcolors.RESET} ms')
+        if not passed:
+            with open('testerror.log', encoding='utf-8', mode='a') as errorlog:
+                errorlog.write(f'test - {test[0].rsplit(doubleBacklash, 1)[1]}{newline}your answer:{newline}{newline}{yourAnswer}{newline}{newline}')
+                errorlog.write(f'expected answers:{newline}{newline}{"".join([f"{rightAnswer}{newline}{newline}" for rightAnswer in rightAnswers])}')
+    
     pathlib.Path('input.txt').unlink()
     pathlib.Path('output.txt').unlink()
 else:
-    printCol(f'Test files weren\'t found in directory: {getDirectoryPath(getFilePathForImport(pyFiles[currentFileIndex]))}', bcolors.FAIL)
+    printCol(f'Test files weren\'t found in directory: {directoryPath}', bcolors.FAIL)
