@@ -23,9 +23,9 @@ if __name__ == '__main__':
     func()
 ```
 
-Type `python test.py` in console to start script, and choose one of files it will suggest.  
+Type `python test.py` in console to start script, and choose one of files it suggests.  
 Script will run all test files from solution file directory. Names of input and output test files should match this pattern:  
 `<name>` - input  
 `<name>.a` - output  
 
-If some of tests will fail log will be saved to `failedtests` file
+If some of tests fail log will be saved to `failedtests` file
