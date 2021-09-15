@@ -1,11 +1,11 @@
 def func():
     with open('input.txt', encoding="utf8", mode='r') as f:
-        input = f.read()
+        inp = f.read()
     
-    output = input
+    outp = inp
 
     with open('output.txt', encoding="utf8", mode='w') as f:
-        f.write(output)
+        f.write(outp)
 
 if __name__ == '__main__':
     func()
