@@ -9,7 +9,7 @@ def func():
             sum = a[i]
             if sum > ans:
                 ans = sum
-        elif sum <=0 and a[i] <= 0:
+        elif sum <= 0 and a[i] <= 0:
             if a[i] > sum:
                 sum = ans = a[i]
         elif sum > 0 and a[i] < 0:
